@@ -1,8 +1,10 @@
-﻿using System;
-using System.IO;
-using Android.App;
+﻿using Android.App;
+using Android.Content;
 using Android.Database;
 using Export.Helper;
+using Plugin.CurrentActivity;
+using System;
+using System.IO;
 using Xamarin.Essentials;
 
 [assembly: Xamarin.Forms.Dependency(typeof(Export.Droid.Implementation.GetFilespec))]
@@ -11,22 +13,59 @@ namespace Export.Droid.Implementation
     public class GetFilespec : IFile
     {
         /// <summary>
-        /// Get device directory to set the file into
+        /// After version 10 (API 29) cannot write directly to Downloads directory, so permissions not needed.
+        /// Before that (API 28 and earlier), permission is needed.
         /// </summary>
-        /// <returns>device specific directory</returns>
-        public string GetDirectory()
+        /// <returns>true, if permission needed, false if not</returns>
+        public bool IsFilePermissionNeeded()
         {
-            return Path.Combine(Android.OS.Environment.ExternalStorageDirectory.AbsolutePath, Android.OS.Environment.DirectoryDownloads);
+            Version version = DeviceInfo.Version;
+
+            if (version.Major < 10)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
-        /// Generate a full filespec from the directory and filename
+        /// Create stream to write file out to
+        /// Note: Do not call before IsFilePermissionNeeded
         /// </summary>
-        /// <param name="directory">device specific directory</param>
-        /// <param name="filename">export filename</param>
-        /// <returns>Full filespec</returns>
-        public string GenerateFilespec(string directory, string filename)
+        /// <param name="filename">Output stream filename to create</param>
+        /// <param name="androidUri">Output Android uri</param>
+        /// <param name="stream">Output stream to write to</param>
+        /// <returns>true = worked w/o error or false = failed with system error</returns>
+        public bool CreateOutputStream(string filename, out string androidUri, out Stream stream)
         {
+            Version version = DeviceInfo.Version;
+
+            // After version 10 (API 29) cannot write directly to Downloads directory
+            // and must do it via the Mediastore API due to security changes
+            if (version.Major < 10)
+            {
+                androidUri = null;
+                return CreateStreamAPI28AndBelow(filename, out stream);
+            }
+            else
+            {
+                return CreateStreamAPI29AndAbove(filename, out androidUri, out stream);
+            }
+        }
+
+        private bool CreateStreamAPI28AndBelow(string filename, out Stream stream)
+        {
+            stream = null;
+
+            string directory;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            directory = Path.Combine(Android.OS.Environment.ExternalStorageDirectory.AbsolutePath, Android.OS.Environment.DirectoryDownloads);
+#pragma warning restore CS0618 // Type or member is obsolete
+
             string filespec = Path.Combine(directory, filename);
 
             FileInfo newFile = new FileInfo(filespec);
@@ -41,125 +80,85 @@ namespace Export.Droid.Implementation
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine("existing file failed delete: " + filespec);
+                    System.Diagnostics.Debug.WriteLine("Failed to delete existing filespec: " + filename);
                     System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
                     System.Diagnostics.Debug.Flush();
+                    return false;
                 }
             }
-
-            return filespec;
-        }
-
-        /// <summary>
-        /// This will not be used in iOS
-        /// </summary>
-        /// <param name="fileDir">File directory</param>
-        /// <param name="fileName">File name</param>
-        /// <param name="fileDescription">Description to be used to add to the download manager</param>
-        /// <returns>status - true: worked; false: failure</returns>
-        public bool SetDownload(string fileDir, string fileName, string fileDescription)
-        {
-            bool permissionGranted = false;
-            const string mimeUriFile = "file://";
-            const string excelMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-            Version version = DeviceInfo.Version;
-
-            // This should not be used at or after version 8 (API 26)
-            if (version.Major >= 8)
-                return true;
 
             try
             {
-                var context = Android.App.Application.Context;
-                permissionGranted = true;
-                string fileSpec = Path.Combine(fileDir, fileName);
-                FileInfo fileInfo = new FileInfo(fileSpec);
-                if (fileInfo.Exists)
-                {
-                    // Notify the user about the completed "download"
-                    DownloadManager downloadManager = DownloadManager.FromContext(context);
-
-                    // https://www.sandersdenardi.com/using-the-android-downloadmanager/
-                    // https://docs.microsoft.com/en-us/dotnet/api/android.app.downloadmanager.invokequery?view=xamarin-android-sdk-9#Android_App_DownloadManager_InvokeQuery_Android_App_DownloadManager_Query_
-                    // have we already added the file to the download manager?
-                    DownloadManager.Query query = new DownloadManager.Query();
-                    query.SetFilterByStatus(DownloadStatus.Pending | // <- note bitwise OR
-                                            DownloadStatus.Running |
-                                            DownloadStatus.Successful);
-
-                    ICursor cursor = downloadManager.InvokeQuery(query);
-
-                    int colDescrption = cursor.GetColumnIndex(DownloadManager.ColumnDescription);
-                    int colDirectory = cursor.GetColumnIndex(DownloadManager.ColumnLocalUri);
-                    int colMimeType = cursor.GetColumnIndex(DownloadManager.ColumnMediaType);
-                    int colFileName = cursor.GetColumnIndex(DownloadManager.ColumnTitle);
-
-                    bool exactMatchFile = false;
-                    bool exactMatchDir = false;
-                    bool exactMatchDesc = false;
-
-                    for (cursor.MoveToFirst(); !cursor.IsAfterLast; cursor.MoveToNext())
-                    {
-                        string dmFileName = cursor.GetString(colFileName);
-                        if (string.IsNullOrEmpty(dmFileName))
-                            dmFileName = string.Empty;
-
-                        if (dmFileName.Equals(fileName))
-                            exactMatchFile = true;
-
-                        string dmDesc = cursor.GetString(colDescrption);
-                        if (string.IsNullOrEmpty(dmDesc))
-                            dmDesc = string.Empty;
-
-                        if (dmDesc.Equals(fileDescription))
-                            exactMatchDesc = true;
-
-                        string dmMimeType = cursor.GetString(colMimeType);
-                        if (string.IsNullOrEmpty(dmMimeType))
-                            dmMimeType = string.Empty;
-
-                        string dmDirectory = cursor.GetString(colDirectory);
-                        if (string.IsNullOrEmpty(dmDirectory))
-                        {
-                            dmDirectory = string.Empty;
-                        }
-                        else
-                        {
-                            int i = dmDirectory.IndexOf(mimeUriFile, StringComparison.Ordinal);
-                            if (i >= 0)
-                            {
-                                dmDirectory = dmDirectory.Substring(mimeUriFile.Length);
-                            }
-                        }
-
-                        if (dmDirectory.Equals(fileDir))
-                            exactMatchDir = true;
-
-                        if (exactMatchFile && exactMatchDir && exactMatchDesc)
-                            break;
-                    }
-
-                    cursor.Close();
-                    query = null;
-
-                    if (!(exactMatchFile && exactMatchDir && exactMatchDesc))
-                    {
-                        downloadManager.AddCompletedDownload(fileInfo.Name, fileDescription, true, excelMimeType,
-                                                             fileInfo.DirectoryName, fileInfo.Length, true);
-                    }
-                }
-                return true;
+                stream = new FileStream(filespec, FileMode.OpenOrCreate);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("SetDownload() filespec: " + fileDir +
-                    " desc: " + fileDescription + " permission granted " + permissionGranted +
-                    " - exception: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Failed file write. Passed in filename: " + filespec + ". Full filespec: " + filespec);
+                System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
                 System.Diagnostics.Debug.Flush();
+                return false;
             }
 
-            return false;
+            return true;
+        }
+
+        private bool CreateStreamAPI29AndAbove(string filename, out string androidUri, out Stream stream)
+        {
+            androidUri = null;
+            stream = null;
+
+            string fileNameWithoutExt = Path.ChangeExtension(filename, null);
+            string fileExtOnly = Path.GetExtension(filename);
+
+            ContentValues values = new ContentValues();
+            ContentResolver contentResolver = CrossCurrentActivity.Current.AppContext.ContentResolver;
+
+            values.Put(Android.Provider.MediaStore.IMediaColumns.Title, filename);
+            if (fileExtOnly.Contains(ExportDataHelper.CsvExtension))
+            {
+                values.Put(Android.Provider.MediaStore.IMediaColumns.MimeType, ExportDataHelper.CsvMimeType);
+            }
+            else if (fileExtOnly.Contains(ExportDataHelper.ExcelExtension))
+            {
+                values.Put(Android.Provider.MediaStore.IMediaColumns.MimeType, ExportDataHelper.ExcelMimeType);
+            }
+
+            values.Put(Android.Provider.MediaStore.Downloads.InterfaceConsts.DisplayName, fileNameWithoutExt);
+
+            Android.Net.Uri newUri;
+
+            try
+            {
+                newUri = contentResolver.Insert(Android.Provider.MediaStore.Downloads.ExternalContentUri, values);
+                if (newUri == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to get URI back from content resolver.");
+                    return false;
+                }
+
+                androidUri = newUri.ToString();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to get data back from content resolver. Filename: " + filename);
+                System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
+                System.Diagnostics.Debug.Flush();
+                return false;
+            }
+
+            try
+            {
+                stream = contentResolver.OpenOutputStream(newUri);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed file write stream output: " + filename);
+                System.Diagnostics.Debug.WriteLine("Exception: " + ex.Message);
+                System.Diagnostics.Debug.Flush();
+                return false;
+            }
+
+            return true;
         }
     }
 }

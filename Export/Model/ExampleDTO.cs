@@ -1,10 +1,7 @@
-﻿using FileHelpers;
-using System;
-
+﻿using System;
 namespace Export.Model
 {
-    [DelimitedRecord("|")]
-    public class Example
+    public class ExampleDTO
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -13,6 +10,6 @@ namespace Export.Model
         public int Counts { get; set; }
         public string Hold { get; set; }
         public string Sets { get; set; }
-        public DateTime RunDate { get; set; }
+        public string RunDate { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using Export.ViewModel;
 using Xamarin.Forms;
 
 namespace Export
@@ -10,13 +10,13 @@ namespace Export
         public ViewMenu()
         {
             InitializeComponent();
-            BindingContext = new ExportViewModel(Navigation);
+            BindingContext = new ExportParentDetailViewModel(Navigation);
             RegisterMesssages();
         }
 
         private void RegisterMesssages()
         {
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataExportedSuccessfully", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataExportedSuccessfully", (senderViewModel) =>
             {
                 if (senderViewModel != null)
                 {
@@ -24,37 +24,37 @@ namespace Export
                 }
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataExportedPermissionGiven", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataExportedPermissionGiven", (senderViewModel) =>
             {
                 DisplayAlert("Info", "Please restart the app to allow this change", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataExportedPermissionDenied", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataExportedPermissionDenied", (senderViewModel) =>
             {
                 DisplayAlert("Error", "You have denied the write permission", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataExportFailure", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataExportFailure", (senderViewModel) =>
             {
                 DisplayAlert("Error", "Failed to export the data", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataExportedFirstPermissionGiven", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataExportedFirstPermissionGiven", (senderViewModel) =>
             {
                 DisplayAlert("Info", "Close this app and retry to export the file", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "NoDataToExport", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "NoDataToExport", (senderViewModel) =>
             {
                 DisplayAlert("Warning !", "No data to export.", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataDownloadFolderFailed", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataDownloadFolderFailed", (senderViewModel) =>
             {
                 DisplayAlert("Info", "Set download directory failed.", "OK");
             });
 
-            MessagingCenter.Subscribe<ExportViewModel>(this, "DataDownloadFolderFailed", (senderViewModel) =>
+            MessagingCenter.Subscribe<ExportParentDetailViewModel>(this, "DataDownloadFolderFailed", (senderViewModel) =>
             {
                 DisplayAlert("Info", "Set download directory failed.", "OK");
             });

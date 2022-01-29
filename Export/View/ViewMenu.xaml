@@ -8,9 +8,8 @@
     x:Class="Export.ViewMenu">
     <ContentPage.Content>
         <StackLayout HorizontalOptions="Center" VerticalOptions="CenterAndExpand">
-            <Label Text="Example export data to Excel" />
-            <Button Text="Create download"
-                    Command="{Binding ExportCommand}">
+            <Label Text="File extract" Padding="0,0,10,0" HorizontalOptions="Center" />
+            <Button Text="CSV file" Command="{Binding ExportCsvCommand}" Padding="0,10,0,10">
                 <Button.BorderRadius>
                     <OnPlatform x:TypeArguments="x:Int32"
                                 Android="0"
@@ -26,6 +25,25 @@
                                 iOS="Bold"/>
                 </Button.FontAttributes>
             </Button>
+
+            <Button Text="Excel file" Command="{Binding ExportExcelCommand}" Padding="0,10,0,10">
+                <Button.BorderRadius>
+                    <OnPlatform x:TypeArguments="x:Int32"
+                                Android="0"
+                                iOS="6"/>
+                </Button.BorderRadius>
+                <Button.BorderWidth>
+                    <OnPlatform x:TypeArguments="x:Double"
+                                Android="0"
+                                iOS="2"/>
+                </Button.BorderWidth>
+                <Button.FontAttributes>
+                    <OnPlatform x:TypeArguments="FontAttributes"
+                                iOS="Bold"/>
+                </Button.FontAttributes>
+            </Button>
+            
+            <Label Text="{Binding Info}" Padding="20,0,0,0" HorizontalOptions="Center" />
         </StackLayout>
     </ContentPage.Content>
 </ContentPage>

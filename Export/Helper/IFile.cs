@@ -1,10 +1,12 @@
 ﻿using System;
+using System.IO;
+
 namespace Export.Helper
 {
     public interface IFile
     {
-        string GetDirectory();
-        string GenerateFilespec(string directory, string filename);
-        bool SetDownload(string fileDir, string fileName, string fileDescription);
+        bool IsFilePermissionNeeded();
+        ////bool CreateOutputStream(string filename, out string androidUri, out StreamWriter stream);
+        bool CreateOutputStream(string filename, out string androidUri, out Stream stream);
     }
 }
