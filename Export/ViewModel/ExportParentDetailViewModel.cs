@@ -19,7 +19,7 @@ namespace Export.ViewModel
         public ExportParentDetailViewModel(INavigation navigation)
         {
             _navigation = navigation;
-            Info = "";
+            Info = string.Empty;
             ExportCsvCommand = new Command(async () => await ExportData(ExportType.CSV));
             ExportExcelCommand = new Command(async () => await ExportData(ExportType.Excel));
         }
@@ -52,7 +52,6 @@ namespace Export.ViewModel
                     string timeframe = DateTime.Now.ToString("yyyy_M_dd_hh_mm_ss_fff");
 
                     filename = ExampleGeneratorHelper.EXPORT_FILENAME;
-                    ////filename = ExampleModel.EXPORT_FILENAME + "Master " + DateTime.Now.TimeOfDay.ToString() + ".csv";
 
                     if (exportType == ExportType.CSV)
                     {
