@@ -3,6 +3,7 @@ using System;
 
 namespace Export.Model
 {
+    //// The below annotation is for FileHelpers
     [DelimitedRecord("|")]
     public class Example
     {
