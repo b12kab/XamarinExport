@@ -150,12 +150,18 @@ namespace Export.Helper
         /// <returns>Cell</returns>
         public Cell AddCell(string value, uint? styleNo = null)
         {
-            return new Cell()
+            Cell newCell = new Cell()
             {
                 CellValue = new CellValue(value),
                 DataType = new EnumValue<CellValues>(CellValues.String),
-                StyleIndex = styleNo
             };
+
+            if (styleNo != null)
+            {
+                newCell.StyleIndex = styleNo;
+            }
+
+            return newCell;
         }
 
         /// <summary>
@@ -169,9 +175,36 @@ namespace Export.Helper
             Cell newCell = new Cell()
             {
                 CellValue = new CellValue(value),
-                DataType = new EnumValue<CellValues>(CellValues.Date),
-                StyleIndex = styleNo
+                DataType = new EnumValue<CellValues>(CellValues.Date)
             };
+
+            if (styleNo != null)
+            {
+                newCell.StyleIndex = styleNo;
+            }
+
+            return newCell;
+        }
+
+        /// <summary>
+        /// Add cell - bool - Using CellValues.Boolean alone doesn't populate values
+        /// </summary>
+        /// <param name="value">value to add</param>
+        /// <param name="styleNo">style number</param>
+        /// <returns>Cell</returns>
+        public Cell AddCell(bool value, uint? styleNo = null)
+        {
+            Cell newCell = new Cell()
+            {
+                CellValue = new CellValue(value ? 1 : 0),
+                DataType = new EnumValue<CellValues>(CellValues.Boolean),
+            };
+
+            if (styleNo != null)
+            {
+                newCell.StyleIndex = styleNo;
+            }
+
             return newCell;
         }
     }

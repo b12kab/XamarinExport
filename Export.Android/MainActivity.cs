@@ -7,7 +7,7 @@ using Android.Views;
 using Android.Widget;
 using Android.OS;
 using Plugin.CurrentActivity;
-using Plugin.Permissions;
+//using Plugin.Permissions;
 
 namespace Export.Droid
 {
@@ -34,8 +34,8 @@ namespace Export.Droid
         {
             // The below line does not work with Xamarin Essentials see
             // https://github.com/jamesmontemagno/PermissionsPlugin/issues/149
-            // Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-            PermissionsImplementation.Current.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+            Xamarin.Essentials.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+            //PermissionsImplementation.Current.OnRequestPermissionsResult(requestCode, permissions, grantResults);
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }

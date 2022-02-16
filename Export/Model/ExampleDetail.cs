@@ -11,5 +11,6 @@ namespace Export.Model
         public int ParentId { get; set; }
         public string Name { get; set; }
         public DateTime DetailRunDate { get; set; }
+        public bool Generate;
     }
 }

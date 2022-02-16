@@ -91,10 +91,11 @@ namespace Export.Helper
 
                 FileStream fileStream = new(cacheFileWithExcelExt, FileMode.CreateNew, FileAccess.ReadWrite);
 
-                using (SpreadsheetDocument document = SpreadsheetDocument.Create(fileStream, SpreadsheetDocumentType.Workbook, true))
+                using (SpreadsheetDocument document = SpreadsheetDocument.Create(fileStream, SpreadsheetDocumentType.Workbook))
                 {
                     this.PopulateExampleSpreadsheet(document);
 
+                    document.Save();
                     document.Close();
                     document.Dispose();
                 }
@@ -120,51 +121,24 @@ namespace Export.Helper
             }
         }
 
+        /// <summary>
+        ////// From https://developpaper.com/net-core-uses-openxml-to-export-and-import-excel/
+        //////      https://stackoverflow.com/questions/9120544/openxml-multiple-sheets
+        /// </summary>
         private void PopulateExampleSpreadsheet(SpreadsheetDocument document)
         {
             try
-            {
+            {                
                 WorkbookPart workbookPart = document.AddWorkbookPart();
                 workbookPart.Workbook = new Workbook();
+                Sheets sheets = document.WorkbookPart.Workbook.AppendChild(new Sheets());
 
-                var workbookStylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
-                workbookStylesPart.Stylesheet = openXMLHelper.GenerateNewStylesheet();
+                //WorkbookStylesPart workbookStylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+                //workbookStylesPart.Stylesheet = openXMLHelper.GenerateNewStylesheet();
                 //workbookStylesPart.Stylesheet.Save();
 
-                WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                var sheetExampleDataSheet = new SheetData();
-                worksheetPart.Worksheet = new Worksheet(sheetExampleDataSheet);
-
-                Sheets sheets = workbookPart.Workbook.AppendChild(new Sheets());
-
-                Sheet sheetExample = new()
-                {
-                    Id = workbookPart.GetIdOfPart(worksheetPart),
-                    SheetId = 1,
-                    Name = "Example data"
-                };
-
-                sheets.Append(sheetExample);
-
-                //// From https://developpaper.com/net-core-uses-openxml-to-export-and-import-excel/
-                sheetExampleDataSheet.Append(this.CreateExampleHeader());
-                sheetExampleDataSheet.Append(this.CreateExampleRows());
-
-                WorksheetPart worksheetExampleDetailPart = workbookPart.AddNewPart<WorksheetPart>();
-                var sheetExampleDetailDataSheet = new SheetData();
-                worksheetExampleDetailPart.Worksheet = new Worksheet(sheetExampleDetailDataSheet);
-
-                Sheet sheetExampleDetail = new()
-                {
-                    Id = workbookPart.GetIdOfPart(worksheetExampleDetailPart),
-                    SheetId = 2,
-                    Name = "Example Detail data"
-                };
-
-                sheetExampleDetailDataSheet.Append(this.CreateExampleDetailHeader());
-                sheetExampleDetailDataSheet.Append(this.CreateExampleDetailRows());
-
-                sheets.Append(sheetExampleDetail);
+                this.CreateDataSheet(ref document, ref workbookPart, ref sheets, 1, "Example data - 1", CreateExampleHeader, CreateExampleRows);
+                this.CreateDataSheet(ref document, ref workbookPart, ref sheets, 2, "Example Detail - 2", CreateExampleDetailHeader, CreateExampleDetailRows);
 
                 workbookPart.Workbook.Save();
             }
@@ -172,6 +146,39 @@ namespace Export.Helper
             {
                 System.Diagnostics.Debug.WriteLine("PopulateSpreadsheet - Failed to create Excel data: " + ex.ToString());
             }
+        }
+
+        /// <summary>
+        /// Create a new sheet
+        /// </summary>
+        private bool CreateDataSheet(ref SpreadsheetDocument document, ref WorkbookPart workbookPart, ref Sheets sheets, uint sheetId, string sheetName, Func<Row> createHeader, Func<List<Row>> createData)
+        {
+            try
+            {
+                WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new Worksheet(new SheetData());
+
+                Sheet newSheet = new()
+                {
+                    Id = document.WorkbookPart.GetIdOfPart(worksheetPart),
+                    SheetId = sheetId,
+                    Name = sheetName
+                };
+
+                sheets.Append(newSheet);
+
+                SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+
+                sheetData.Append(createHeader());
+                sheetData.Append(createData());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("CreateDataSheet - Failed to create Exercise sheet data: " + ex.ToString());
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -240,6 +247,7 @@ namespace Export.Helper
             row.AppendChild(openXMLHelper.AddCell("ParentId", 1));
             row.AppendChild(openXMLHelper.AddCell("Name", 1));
             row.AppendChild(openXMLHelper.AddCell("DetailRunDate", 1));
+            row.AppendChild(openXMLHelper.AddCell("Generate", 1));
 
             return row;
         }
@@ -255,9 +263,8 @@ namespace Export.Helper
                 row.AppendChild(openXMLHelper.AddCell(item.Id));
                 row.AppendChild(openXMLHelper.AddCell(item.ParentId));
                 row.AppendChild(openXMLHelper.AddCell(item.Name));
-                //DocumentFormat.OpenXml.Spreadsheet.Cell dateCell = openXMLHelper.AddCell(item.DetailRunDate, 2);
-                //row.AppendChild(dateCell);
                 row.AppendChild(openXMLHelper.AddCell(item.DetailRunDate, 2));
+                row.AppendChild(openXMLHelper.AddCell(item.Generate));
 
                 rows.Add(row);
             }

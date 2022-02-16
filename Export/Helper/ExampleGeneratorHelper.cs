@@ -32,7 +32,8 @@ namespace Export.Model
                 Id = 1,
                 ParentId = 1,
                 Name = "detail one",
-                DetailRunDate = DateTime.Now 
+                DetailRunDate = DateTime.Now,
+                Generate = true
             };
             ExportDetailList.Add(exampleDetail);
 
@@ -54,7 +55,8 @@ namespace Export.Model
                 Id = 2,
                 ParentId = 2,
                 Name = "detail two",
-                DetailRunDate = DateTime.Now
+                DetailRunDate = DateTime.Now,
+                Generate = true
             };
             ExportDetailList.Add(exampleDetail);
 
@@ -67,7 +69,7 @@ namespace Export.Model
                 Counts = 3,
                 Hold = "30 secs",
                 Sets = "3",
-                RunDate = DateTime.Now
+                RunDate = DateTime.Now,
             };
             ExportList.Add(example);
 
@@ -76,7 +78,8 @@ namespace Export.Model
                 Id = 3,
                 ParentId = 3,
                 Name = "detail three",
-                DetailRunDate = DateTime.Now
+                DetailRunDate = DateTime.Now,
+                Generate = false
             };
             ExportDetailList.Add(exampleDetail);
         }
